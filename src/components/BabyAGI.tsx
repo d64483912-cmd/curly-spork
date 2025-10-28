@@ -42,8 +42,6 @@ import { TaskEditor } from './TaskEditor';
 import { aiContextManager } from '@/lib/aiContext';
 import { ParticleBackground } from './ParticleBackground';
 import ReportModal from './ReportModal';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
 
 // Types
 export interface Task {
@@ -302,6 +300,7 @@ export default function BabyAGI() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportObjective, setReportObjective] = useState<Objective | null>(null);
+  const [speedDialOpen, setSpeedDialOpen] = useState(false);
 
   // Loop mode evaluation
   useEffect(() => {
@@ -611,9 +610,9 @@ export default function BabyAGI() {
             </div>
             
             <div className="flex items-center gap-2">
-              <motion.button
-                whileHover={{ scale: 1.05, backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
-                whileTap={{ scale: 0.95 }}
+             <<motion.button
+                whileHover={{ scale: 1.05, boxShadow: '0 0 25px rgba(138, 75, 255, 0.5)' }}
+                whileTap={{ scale: 05 }}
                 onClick={() => setShowAnalytics(!showAnalytics)}
                 className="bg-white/10 px-3 py-2 rounded-lg transition-all"
                 title="Analytics"
@@ -1160,7 +1159,7 @@ export default function BabyAGI() {
       )}
 
       {editingTask && currentObjective && (
-        <TaskEditor
+       <<TaskEditor
           task={editingTask}
           allTasks={currentObjective.tasks}
           isOpen={!!editingTask}
@@ -1169,6 +1168,120 @@ export default function BabyAGI() {
           onDelete={deleteTask}
         />
       )}
-    </div>
-  );
+
+     <iReportModal
+        objective={reportObjective}
+        isOpen={reportOpen}
+        onClose={() => setReportOpen(false)}
+      />
+
+      {/* Floating Speed Dial */}
+     < div className="fixed bottom-6 right-6 z-50">
+        {/* Backdrop when open */}
+       < AnimatePresence>
+          {speedDialOpen && (
+           < motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.4 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black"
+              onClick={() => setSpeedDialOpen(false)}
+            />
+          )}
+      </  AnimatePresence>
+
+        {/* Action buttons stack */}
+       < div className="relative">
+         < AnimatePresence>
+            {speedDialOpen && (
+             < motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="mb-3 flex flex-col items-end gap-2"
+              >
+               < button
+                  onClick={() => { setShowAnalytics(v => !v); setSpeedDialOpen(false); }}
+                  className="glass px-3 py-2 rounded-lg flex items-center gap-2"
+                  title="Toggle Analytics"
+                >
+                 < BarChart3 className="w-4 h-4" /> Analytics
+              </  button>
+               < button
+                  onClick={() => { handleExport(); setSpeedDialOpen(false); }}
+                  className="glass px-3 py-2 rounded-lg flex items-center gap-2"
+                  title="Export Data (JSON)"
+                >
+                 < Download className="w-4 h-4" /> Export JSON
+              </  button>
+               < button
+                  onClick={() => { openReportForCurrentObjective(); setSpeedDialOpen(false); }}
+                  disabled={!currentObjective}
+                  className="glass px-3 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50"
+                  title="Generate Report (Markdown)"
+                >
+                 < FileText className="w-4 h-4" /> Report
+              </  button>
+               < button
+                  onClick={() => { setChatOpen(true); setSpeedDialOpen(false); }}
+                  className="glass px-3 py-2 rounded-lg flex items-center gap-2"
+                  title="AI Assistant"
+                >
+                 < MessageSquare className="w-4 h-4" /> Assistant
+              </  button>
+               < button
+                  onClick={() => { setKnowledgeOpen(v => !v); setSpeedDialOpen(false); }}
+                  className="glass px-3 py-2 rounded-lg flex items-center gap-2"
+                  title="Past Learnings"
+                >
+                 < Lightbulb className="w-4 h-4" /> Learnings
+              </  button>
+               < button
+                  onClick={() => { setTeamCollabOpen(true); setSpeedDialOpen(false); }}
+                  className="glass px-3 py-2 rounded-lg flex items-center gap-2"
+                  title="Team Collaboration"
+                >
+                 < Users className="w-4 h-4" /> Team
+              </  button>
+               < button
+                  onClick={() => { setPerformanceOpen(true); setSpeedDialOpen(false); }}
+                  className="glass px-3 py-2 rounded-lg flex items-center gap-2"
+                  title="Performance Insights"
+                >
+                 < TrendingUp className="w-4 h-4" /> Performance
+              </  button>
+                {loopMode === 'timed' && currentObjective && (
+                 < button
+                    onClick={() => { evaluateProgress(); setSpeedDialOpen(false); }}
+                    className="glass px-3 py-2 rounded-lg flex items-center gap-2"
+                    title="Evaluate Now"
+                  >
+                   < RefreshCw className="w-4 h-4" /> Evaluate
+                </  button>
+                )}
+            </  motion.div>
+            )}
+        </  AnimatePresence>
+
+          {/* FAB */}
+         < motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setSpeedDialOpen(o => !o)}
+            className="rounded-full w-12 h-12 flex items-center justify-center bg-gradient-to-r from-primary to-accent shadow-lg glow-border"
+            title="Actions"
+          >
+           < motion.div
+              animate={{ rotate: speedDialOpen ? 45 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+             < Sparkles className="w-5 h-5 text-white" />
+          </  motion.div>
+        </  motion.button>
+      </  div>
+    </  div>
+  </  div>
+  _code);new
+</}
+;
 }
