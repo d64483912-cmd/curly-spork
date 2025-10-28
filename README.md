@@ -67,102 +67,103 @@ cd swiftmind-forge
 # Install dependencies
 npm install
 
+# Copy env example and fill in values
+cp .env.example .env
+# Edit .env and set SUPABASE values
+
 # Run locally
 npm run dev
 
 # Build for production
 npm run build
+```
 
 Then open http://localhost:5173 in your browser.
 
+---
+
+## 🔧 Configuration
+
+### Frontend environment (.env)
+Add the following to your `.env` (see `.env.example`):
+
+```
+VITE_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
+VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+VITE_APP_NAME=SwiftMind Forge
+```
+
+### Supabase Edge Functions (server)
+Some features call Supabase Edge Functions (e.g., `generate-tasks`, `evaluate-progress`, `reflect-on-objective`, `store-knowledge`).  
+Make sure the following environment variables are set in your Supabase project:
+
+- `LOVABLE_API_KEY` — Lovable AI Gateway API key (used by AI functions)
+- `SUPABASE_URL` — your Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY` — service role key for secure DB access in functions
+
+Deploy functions:
+
+```bash
+# From the supabase/ directory
+supabase functions deploy generate-tasks
+supabase functions deploy evaluate-progress
+supabase functions deploy reflect-on-objective
+supabase functions deploy store-knowledge
+# ...and others as needed
+```
 
 ---
 
-🧠 Usage
+## 🧠 Usage
 
 1. Set a Goal: Type a high-level objective in the sidebar (e.g., “Launch a research assistant app”).
-
-
 2. Generate Tasks: Click Generate with AI — SwiftMind Forge will create structured subtasks automatically.
-
-
 3. Execute: Hit Play to begin autonomous execution. Tasks will progress and mark themselves as complete.
-
-
 4. Analyze: Switch to the Analytics tab to view metrics and trends.
-
-
 5. Export: Save your progress as a JSON file with one click.
 
+---
 
+## 🧪 Upcoming Phases
 
+### Phase 3: Intelligence Expansion
+- Reflective memory: learn from past objectives.
+- Recursive subtask generation (multi-layer planning).
+- Continuous loop mode for evolving objectives.
+- Knowledge base integration via Supabase vectors.
+
+### Phase 4: Collaboration & Productization
+- Chat-driven AI planning assistant.
+- Multi-agent roles (Planner, Researcher, Executor).
+- Team workspace and cloud sync.
+- Auth, Notion/Sheets export, and SaaS features.
 
 ---
 
-🧪 Upcoming Phases
-
-Phase 3: Intelligence Expansion
-
-Reflective memory: learn from past objectives.
-
-Recursive subtask generation (multi-layer planning).
-
-Continuous loop mode for evolving objectives.
-
-Knowledge base integration via Supabase vectors.
-
-
-Phase 4: Collaboration & Productization
-
-Chat-driven AI planning assistant.
-
-Multi-agent roles (Planner, Researcher, Executor).
-
-Team workspace and cloud sync.
-
-Auth, Notion/Sheets export, and SaaS features.
-
-
-
----
-
-🤝 Contributing
+## 🤝 Contributing
 
 Contributions are welcome!
 If you’d like to extend AI logic, enhance UI, or optimize the execution engine:
 
-1. Fork the repo
-
-
-2. Create your feature branch (git checkout -b feature/amazing-feature)
-
-
-3. Commit your changes (git commit -m 'Add amazing feature')
-
-
-4. Push to the branch (git push origin feature/amazing-feature)
-
-
+1. Fork the repo  
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)  
+3. Commit your changes (`git commit -m 'Add amazing feature'`)  
+4. Push to the branch (`git push origin feature/amazing-feature`)  
 5. Open a Pull Request 🚀
 
-
-
-
 ---
 
-📜 License
+## 📜 License
 
-MIT License © 2025 [Your Name / SwiftMind Labs]
+MIT License © 2025 [Your Name / SwiftMind Labs]  
 Feel free to use, modify, and build upon this project.
 
-
 ---
 
-💡 Inspiration
+## 💡 Inspiration
 
-Inspired by BabyAGI and modern autonomous agents like Godmode, Devin, and Orion Research Agent.
+Inspired by BabyAGI and modern autonomous agents like Godmode, Devin, and Orion Research Agent.  
 SwiftMind Forge is designed to make autonomous reasoning and execution accessible and beautiful.
-
 
 ---
 
