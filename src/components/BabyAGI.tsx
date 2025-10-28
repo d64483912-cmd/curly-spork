@@ -29,6 +29,7 @@ import {
   Link2,
   FileText,
   AlertTriangle,
+  KeyRound,
 } from 'lucide-react';
 import { supabase, SUPABASE_CONFIGURED } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -43,6 +44,7 @@ import { TaskEditor } from './TaskEditor';
 import { aiContextManager } from '@/lib/aiContext';
 import { ParticleBackground } from './ParticleBackground';
 import ReportModal from './ReportModal';
+import SettingsModal from './SettingsModal';
 
 // Types
 export interface Task {
@@ -204,26 +206,82 @@ const generateTasksWithAI = async (
   description: string,
   agentId?: string,
 ): Promise<{ tasks: Task[]; insights?: string }> => {
+  // Prefer OpenRouter if configured
+  const openrouterKey = localStorage.getItem("openrouter_api_key") || "";
+  const openrouterModel = localStorage.getItem("openrouter_model") || "meta-llama/llama-3.1-8b-instruct:free";
+
   try {
-    let agentProfile = null;
+    let systemPrompt = "You are an AI planning assistant that breaks objectives into actionable tasks with priorities, categories and rough time estimates.";
+    let agentModelPref: string | undefined = undefined;
+
     if (agentId) {
       const { data } = await supabase.from('agent_profiles').select('*').eq('id', agentId).single();
-      agentProfile = data;
+      if (data?.system_prompt) systemPrompt = data.system_prompt;
+      if (data?.model_preference) agentModelPref = data.model_preference;
     }
 
     const historicalContext = aiContextManager.getTaskGenerationContext(objective, description);
 
+    if (openrouterKey) {
+      const modelToUse = agentModelPref || openrouterModel;
+      const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${openrouterKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: modelToUse,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `Objective: ${objective}\n\nDescription: ${description}\n\nHistorical context: ${historicalContext}\n\nReturn JSON with "tasks": array of {title, priority, category?, estimatedTime?} and "insights": string.` }
+          ],
+        }),
+      });
+
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(`OpenRouter error: ${text}`);
+      }
+      const json = await resp.json();
+      const content = json?.choices?.[0]?.message?.content || "";
+      // Attempt to parse JSON from the model output
+      let parsed: any = null;
+      try {
+        const match = content.match(/\{[\s\S]*\}/);
+        parsed = match ? JSON.parse(match[0]) : JSON.parse(content);
+      } catch {
+        // If parsing fails, fallback minimal tasks
+      }
+      const tasksData = parsed?.tasks || [];
+      const insights = parsed?.insights || "Generated via OpenRouter model.";
+
+      const aiTasks: Task[] = Array.isArray(tasksData) && tasksData.length > 0
+        ? tasksData.map((task: any, index: number) => ({
+            id: `${Date.now()}-${index}`,
+            title: String(task.title || `Task ${index + 1} for ${objective}`),
+            status: 'pending' as const,
+            priority: Number(task.priority ?? index + 1),
+            category: task.category,
+            estimatedTime: task.estimatedTime,
+            createdAt: Date.now() + index,
+          }))
+        : [
+            { id: `${Date.now()}-0`, title: `Plan for: ${objective}`, status: 'pending', priority: 1, createdAt: Date.now() },
+            { id: `${Date.now()}-1`, title: `Execute core steps for: ${objective}`, status: 'pending', priority: 2, createdAt: Date.now() + 1 },
+            { id: `${Date.now()}-2`, title: `Validate and iterate: ${objective}`, status: 'pending', priority: 3, createdAt: Date.now() + 2 },
+          ];
+
+      return { tasks: aiTasks, insights };
+    }
+
+    // Fallback to Supabase Edge Function if OpenRouter Key not set
     const { data, error } = await supabase.functions.invoke('generate-tasks', {
       body: {
         objective,
         description,
         historicalContext,
-        agentProfile: agentProfile
-          ? {
-              systemPrompt: agentProfile.system_prompt,
-              model: agentProfile.model_preference,
-            }
-          : null,
+        agentProfile: { systemPrompt, model: agentModelPref },
       },
     });
 
@@ -255,41 +313,11 @@ const generateTasksWithAI = async (
     toast.error('AI generation failed, using basic tasks');
 
     const basicTasks: Task[] = [
-      {
-        id: `${Date.now()}-0`,
-        title: `Research and gather information for: ${objective}`,
-        status: 'pending',
-        priority: 1,
-        createdAt: Date.now(),
-      },
-      {
-        id: `${Date.now()}-1`,
-        title: `Define success criteria for: ${objective}`,
-        status: 'pending',
-        priority: 2,
-        createdAt: Date.now() + 1,
-      },
-      {
-        id: `${Date.now()}-2`,
-        title: `Create implementation plan for: ${objective}`,
-        status: 'pending',
-        priority: 3,
-        createdAt: Date.now() + 2,
-      },
-      {
-        id: `${Date.now()}-3`,
-        title: `Execute core functionality for: ${objective}`,
-        status: 'pending',
-        priority: 4,
-        createdAt: Date.now() + 3,
-      },
-      {
-        id: `${Date.now()}-4`,
-        title: `Test and validate: ${objective}`,
-        status: 'pending',
-        priority: 5,
-        createdAt: Date.now() + 4,
-      },
+      { id: `${Date.now()}-0`, title: `Research and gather information for: ${objective}`, status: 'pending', priority: 1, createdAt: Date.now() },
+      { id: `${Date.now()}-1`, title: `Define success criteria for: ${objective}`, status: 'pending', priority: 2, createdAt: Date.now() + 1 },
+      { id: `${Date.now()}-2`, title: `Create implementation plan for: ${objective}`, status: 'pending', priority: 3, createdAt: Date.now() + 2 },
+      { id: `${Date.now()}-3`, title: `Execute core functionality for: ${objective}`, status: 'pending', priority: 4, createdAt: Date.now() + 3 },
+      { id: `${Date.now()}-4`, title: `Test and validate: ${objective}`, status: 'pending', priority: 5, createdAt: Date.now() + 4 },
     ];
 
     return { tasks: basicTasks };
@@ -331,6 +359,7 @@ export default function BabyAGI() {
   const [reportObjective, setReportObjective] = useState<Objective | null>(null);
   const [speedDialOpen, setSpeedDialOpen] = useState(false);
   const [installPromptEvent, setInstallPromptEvent] = useState<any>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     if (loopMode === 'off' || !currentObjective || currentObjective.tasks.length === 0) return;
@@ -657,14 +686,34 @@ export default function BabyAGI() {
 
       <main className="container mx-auto px-4 py-6 max-w-4xl relative z-10">
         {!SUPABASE_CONFIGURED && (
-         < div className="mb-6 glass-deep rounded-xl border border-yellow-500/30 p-4">
-           < div className="flex items-center gap-2">
-             < AlertTriangle className="w-5 h-5 text-yellow-400" />
-             < div className="font-semibold">Supabase is not configur</eddiv>
-          </  div>
-           < p className="text-sm text-muted-foreground mt-1">
+          <div className="mb-6 glass-deep rounded-xl border border-yellow-500/30 p-4">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-yellow-400" />
+              <div className="font-semibold">Supabase is not configured</div>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
               Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment.
-              On Vercel: Project Settings → Environment Variables. Locally: cop <ycode>.env.examp</lecode> t <ocode>.e</nvcode> and fill values.
+              On Vercel: Project Settings → Environment Variables. Locally: copy <code>.env.example</code> to <code>.env</code> and fill values.
+            </p>
+            <div className="mt-2 flex gap-2">
+              <button
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(
+                      'VITE_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co\nVITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY'
+                    );
+                    toast.info('Environment template copied to clipboard');
+                  } catch {
+                    // ignore
+                  }
+                }}
+                className="bg-white/10 hover:bg-white/20 px-3 py-1 rounded-lg transition-all"
+              >
+                Copy env template
+              </button>
+            </div>
+          </div>
+        )}
         {/* Analytics Panel */}
         {showAnalytics && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-6">
@@ -998,6 +1047,7 @@ export default function BabyAGI() {
       )}
 
       <ReportModal objective={reportObjective} isOpen={reportOpen} onClose={() => setReportOpen(false)} />
+      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
       {/* Floating Speed Dial (Radial) */}
       <div className="fixed bottom-6 right-6 z-50">
@@ -1019,6 +1069,7 @@ export default function BabyAGI() {
                   { icon: Lightbulb, title: 'Learnings', onClick: () => setKnowledgeOpen((v) => !v), angle: -170 },
                   { icon: Users, title: 'Team', onClick: () => setTeamCollabOpen(true), angle: -210 },
                   { icon: TrendingUp, title: 'Performance', onClick: () => setPerformanceOpen(true), angle: -250 },
+                  { icon: KeyRound, title: 'OpenRouter Settings', onClick: () => setSettingsOpen(true), angle: -310 },
                 ]
                   .concat(loopMode === 'timed' && currentObjective ? [{ icon: RefreshCw, title: 'Evaluate', onClick: evaluateProgress, angle: -290 }] : [])
                   .map((action, idx) => {
