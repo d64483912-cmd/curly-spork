@@ -28,8 +28,9 @@ import {
   Edit2,
   Link2,
   FileText,
+  AlertTriangle,
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, SUPABASE_CONFIGURED } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Analytics from './Analytics';
 import { PlanningChat } from './PlanningChat';
@@ -625,6 +626,15 @@ export default function BabyAGI() {
       </header>
 
       <main className="container mx-auto px-4 py-6 max-w-4xl relative z-10">
+        {!SUPABASE_CONFIGURED && (
+         < div className="mb-6 glass-deep rounded-xl border border-yellow-500/30 p-4">
+           < div className="flex items-center gap-2">
+             < AlertTriangle className="w-5 h-5 text-yellow-400" />
+             < div className="font-semibold">Supabase is not configur</eddiv>
+          </  div>
+           < p className="text-sm text-muted-foreground mt-1">
+              Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment.
+              On Vercel: Project Settings → Environment Variables. Locally: cop <ycode>.env.examp</lecode> t <ocode>.e</nvcode> and fill values.
         {/* Analytics Panel */}
         {showAnalytics && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mb-6">
