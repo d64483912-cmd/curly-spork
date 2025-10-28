@@ -1,0 +1,31 @@
+project_id = "bnjthwrpigvchbhsmfec"
+
+[functions.generate-tasks]
+verify_jwt = false
+
+[functions.reflect-on-objective]
+verify_jwt = false
+
+[functions.get-learned-insights]
+verify_jwt = false
+
+[functions.evaluate-progress]
+verify_jwt = false
+
+[functions.planning-chat]
+verify_jwt = false
+
+[functions.generate-subtasks]
+verify_jwt = false
+
+[functions.store-knowledge]
+verify_jwt = false
+
+[functions.retrieve-context]
+verify_jwt = false
+
+[functions.predict-performance]
+verify_jwt = false
+
+[functions.share-objective]
+verify_jwt = false
