@@ -1,12 +1,14 @@
 {
-  "name": "BabyAGI - Autonomous Task Agent",
-  "short_name": "BabyAGI",
-  "description": "AI-powered autonomous task planning and execution agent with learning capabilities",
+  "name": "SwiftMind Forge",
+  "short_name": "SwiftMind",
+  "description": "Autonomous AI task planning and execution agent with learning and reflection",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#1e1b4b",
+  "background_color": "#0B1220",
   "theme_color": "#8b5cf6",
   "orientation": "portrait-primary",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icon-192.png",

@@ -4,16 +4,48 @@ import type { Database } from './types';
 
 // Load from Vite environment variables to avoid hardcoding secrets.
 // Define these in your .env as VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+
+export const SUPABASE_CONFIGURED = Boolean(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY);
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
-  }
-});
+// Provide a safe fallback if env vars are missing so the app doesn't crash.
+// Calls will resolve with an error that can be surfaced to the user.
+function createDummyClient() {
+  const error = new Error('Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+  return {
+    from() {
+      return {
+        select() {
+          return {
+            eq() {
+              return {
+                single: async () => ({ data: null, error }),
+              };
+            },
+          };
+        },
+      };
+    },
+    functions: {
+      invoke: async () => ({ data: null, error }),
+    },
+    auth: {
+      // Minimal shape to avoid undefined access
+      getSession: async () => ({ data: { session: null }, error }),
+    },
+  } as unknown as ReturnType<typeof createClient<Database>>;
+}
+
+export const supabase = SUPABASE_CONFIGURED
+  ? createClient<Database>(SUPABASE_URL!, SUPABASE_PUBLISHABLE_KEY!, {
+      auth: {
+        storage: localStorage,
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    })
+  : createDummyClient();
