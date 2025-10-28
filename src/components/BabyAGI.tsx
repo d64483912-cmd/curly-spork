@@ -1175,7 +1175,83 @@ export default function BabyAGI() {
         onClose={() => setReportOpen(false)}
       />
 
-      {/* Floating Speed Dial */}
+      {/* Floating Speed Dial (Radial) */}
+      <div className="fixed bottom-6 right-6 z-50">
+        {/* Backdrop when open */}
+        <AnimatePresence>
+          {speedDialOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.4 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black"
+              onClick={() => setSpeedDialOpen(false)}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Radial action fan */}
+        <div className="relative">
+          <AnimatePresence>
+            {speedDialOpen && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="absolute bottom-16 right-0 w-0 h-0"
+              >
+                {[
+                  { icon: BarChart3, title: 'Analytics', onClick: () => setShowAnalytics(v => !v), angle: -90 },
+                  { icon: Download, title: 'Export JSON', onClick: handleExport, angle: -130 },
+                  { icon: FileText, title: 'Report', onClick: openReportForCurrentObjective, angle: -50, disabled: !currentObjective },
+                  { icon: MessageSquare, title: 'Assistant', onClick: () => setChatOpen(true), angle: -10 },
+                  { icon: Lightbulb, title: 'Learnings', onClick: () => setKnowledgeOpen(v => !v), angle: -170 },
+                  { icon: Users, title: 'Team', onClick: () => setTeamCollabOpen(true), angle: -210 },
+                  { icon: TrendingUp, title: 'Performance', onClick: () => setPerformanceOpen(true), angle: -250 },
+                ]
+                  .concat(loopMode === 'timed' && currentObjective ? [{ icon: RefreshCw, title: 'Evaluate', onClick: evaluateProgress, angle: -290 }] : [])
+                  .map((action, idx) => {
+                    const radius = 110;
+                    const rad = (action.angle * Math.PI) / 180;
+                    const x = Math.cos(rad) * radius;
+                    const y = Math.sin(rad) * radius;
+                    const Icon = action.icon as React.ComponentType<{ className?: string }>;
+                    return (
+                      <motion.button
+                        key={idx}
+                        initial={{ opacity: 0, x: 0, y: 0 }}
+                        animate={{ opacity: 1, x, y }}
+                        exit={{ opacity: 0, x: 0, y: 0 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 20, delay: idx * 0.03 }}
+                        onClick={() => { if (!action.disabled) { action.onClick(); setSpeedDialOpen(false); } }}
+                        className={`absolute right-0 bottom-0 rounded-full w-10 h-10 flex items-center justify-center glass glow-border ${action.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title={action.title}
+                      >
+                        <Icon className="w-5 h-5" />
+                      </motion.button>
+                    );
+                  })}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* FAB */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setSpeedDialOpen(o => !o)}
+            className="rounded-full w-12 h-12 flex items-center justify-center bg-gradient-to-r from-primary to-accent shadow-lg glow-border relative"
+            title="Actions"
+          >
+            <motion.div
+              animate={{ rotate: speedDialOpen ? 45 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Sparkles className="w-5 h-5 text-white" />
+            </motion.div>
+          </motion.button>
+        </div>
+      </div>oating Speed Dial */}
      < div className="fixed bottom-6 right-6 z-50">
         {/* Backdrop when open */}
        < AnimatePresence>
