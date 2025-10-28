@@ -26,7 +26,8 @@ import {
   Lightbulb,
   Users,
   Edit2,
-  Link2
+  Link2,
+  FileText
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -40,6 +41,7 @@ import { PerformanceInsights } from './PerformanceInsights';
 import { TaskEditor } from './TaskEditor';
 import { aiContextManager } from '@/lib/aiContext';
 import { ParticleBackground } from './ParticleBackground';
+import ReportModal from './ReportModal';
 
 // Types
 export interface Task {
@@ -296,6 +298,8 @@ export default function BabyAGI() {
   const [teamCollabOpen, setTeamCollabOpen] = useState(false);
   const [performanceOpen, setPerformanceOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportObjective, setReportObjective] = useState<Objective | null>(null);
 
   // Loop mode evaluation
   useEffect(() => {
@@ -1146,6 +1150,12 @@ export default function BabyAGI() {
           onDelete={deleteTask}
         />
       )}
+
+      <ReportModal
+        objective={reportObjective}
+        isOpen={reportOpen}
+        onClose={() => setReportOpen(false)}
+      />
     </div>
   );
 }
