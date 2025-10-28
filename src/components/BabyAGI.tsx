@@ -330,6 +330,7 @@ export default function BabyAGI() {
   const [reportOpen, setReportOpen] = useState(false);
   const [reportObjective, setReportObjective] = useState<Objective | null>(null);
   const [speedDialOpen, setSpeedDialOpen] = useState(false);
+  const [installPromptEvent, setInstallPromptEvent] = useState<any>(null);
 
   useEffect(() => {
     if (loopMode === 'off' || !currentObjective || currentObjective.tasks.length === 0) return;
@@ -576,6 +577,35 @@ export default function BabyAGI() {
       currentObjective.tasks.length > 0 && currentObjective.tasks.every((t) => t.status === 'completed');
     if (!allCompleted) {
       toast.info('Report includes current progress (objective not fully completed).');
+    }
+  };
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setInstallPromptEvent(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!installPromptEvent) {
+      toast.info('Install prompt not available. You may already have installed the app or your browser does not support it.');
+      return;
+    }
+    try {
+      installPromptEvent.prompt();
+      const choice = await installPromptEvent.userChoice;
+      if (choice?.outcome === 'accepted') {
+        toast.success('App install accepted');
+      } else {
+        toast.info('App install dismissed');
+      }
+    } catch {
+      // ignore
+    } finally {
+      setInstallPromptEvent(null);
     }
   };
 
