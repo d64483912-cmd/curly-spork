@@ -42,6 +42,8 @@ import { TaskEditor } from './TaskEditor';
 import { aiContextManager } from '@/lib/aiContext';
 import { ParticleBackground } from './ParticleBackground';
 import ReportModal from './ReportModal';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 
 // Types
 export interface Task {
