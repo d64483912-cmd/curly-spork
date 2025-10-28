@@ -27,7 +27,8 @@ import {
   Users,
   Edit2,
   Link2,
-  FileText
+  FileText,
+  Share2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -835,42 +836,24 @@ export default function BabyAGI() {
         )}
 
         {/* Task List */}
-        {currentObjective && currentObjective.tasks.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 mb-4">
-              <ListTodo className="w-5 h-5 text-primary" />
-              <h2 className="text-lg font-semibold">Task Queue</h2>
-            </div>
-            
-            <AnimatePresence mode="popLayout">
-              {currentObjective.tasks.map((task, index) => (
-                <motion.div
-                  key={task.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ delay: index * 0.05 }}
-                  className={`
-                    glass-deep rounded-xl p-4 border transition-all hover:shadow-2xl
-                    ${task.status === 'completed' ? 'border-green-500/40 shadow-green-500/20' : 
-                      task.status === 'executing' ? 'border-yellow-500/40 shadow-yellow-500/20 glow-border' : 
-                      'border-white/10'}
-                  `}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="mt-1">
-                      {task.status === 'completed' ? (
-                        <CheckCircle2 className="w-5 h-5 text-green-400" />
-                      ) : task.status === 'executing' ? (
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                        >
-                          <Zap className="w-5 h-5 text-yellow-400" />
-                        </motion.div>
-                      ) : (
-                        <Circle className="w-5 h-5 text-muted-foreground" />
-                      )}
+        {currentObjective && (
+                <>
+                  <button
+                    onClick={openReportForCurrentObjective}
+                    className="bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition-all"
+                    title="Generate Report"
+                  >
+                    <FileText className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={shareCurrentObjective}
+                    className="bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition-all"
+                    title="Share Objective"
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </button>
+                </>
+              )}
                     </div>
                     
                     <div className="flex-1 min-w-0">
@@ -1150,12 +1133,6 @@ export default function BabyAGI() {
           onDelete={deleteTask}
         />
       )}
-
-      <ReportModal
-        objective={reportObjective}
-        isOpen={reportOpen}
-        onClose={() => setReportOpen(false)}
-      />
     </div>
   );
 }
