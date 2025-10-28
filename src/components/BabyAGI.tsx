@@ -26,7 +26,8 @@ import {
   Lightbulb,
   Users,
   Edit2,
-  Link2
+  Link2,
+  FileText
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -40,6 +41,7 @@ import { PerformanceInsights } from './PerformanceInsights';
 import { TaskEditor } from './TaskEditor';
 import { aiContextManager } from '@/lib/aiContext';
 import { ParticleBackground } from './ParticleBackground';
+import ReportModal from './ReportModal';
 
 // Types
 export interface Task {
@@ -296,6 +298,9 @@ export default function BabyAGI() {
   const [teamCollabOpen, setTeamCollabOpen] = useState(false);
   const [performanceOpen, setPerformanceOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportObjective, setReportObjective] = useState<Objective | null>(null);
+  const [speedDialOpen, setSpeedDialOpen] = useState(false);
 
   // Loop mode evaluation
   useEffect(() => {
@@ -490,6 +495,10 @@ export default function BabyAGI() {
       } else {
         toast.success('Knowledge stored for future use!');
       }
+
+      // Open the comprehensive report for download
+      setReportObjective(objective);
+      setReportOpen(true);
     } catch (error) {
       console.error('Error during reflection:', error);
     }
@@ -560,6 +569,19 @@ export default function BabyAGI() {
     // TODO: Implement action handlers
   };
 
+  const openReportForCurrentObjective = () => {
+    if (!currentObjective) return;
+    setReportObjective(currentObjective);
+    setReportOpen(true);
+
+    const allCompleted = currentObjective.tasks.length > 0 && currentObjective.tasks.every(t => t.status === 'completed');
+    if (!allCompleted) {
+      toast.info('Report includes current progress (objective not fully completed).');
+    }
+  };
+
+  
+
   const stats = currentObjective ? {
     total: currentObjective.tasks.length,
     completed: currentObjective.tasks.filter(t => t.status === 'completed').length,
@@ -588,9 +610,9 @@ export default function BabyAGI() {
             </div>
             
             <div className="flex items-center gap-2">
-              <motion.button
-                whileHover={{ scale: 1.05, backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
-                whileTap={{ scale: 0.95 }}
+             <<motion.button
+                whileHover={{ scale: 1.05, boxShadow: '0 0 25px rgba(138, 75, 255, 0.5)' }}
+                whileTap={{ scale: 05 }}
                 onClick={() => setShowAnalytics(!showAnalytics)}
                 className="bg-white/10 px-3 py-2 rounded-lg transition-all"
                 title="Analytics"
@@ -610,8 +632,8 @@ export default function BabyAGI() {
                 className="bg-white/10 px-3 py-2 rounded-lg transition-all"
                 title="Export Data"
               >
-                <Download className="w-4 h-4" />
-              </motion.button>
+               <<Download className="w-4 h-4" />
+            </</motion.button>
 
               <button
                 onClick={() => setChatOpen(true)}
@@ -1137,7 +1159,7 @@ export default function BabyAGI() {
       )}
 
       {editingTask && currentObjective && (
-        <TaskEditor
+       <<TaskEditor
           task={editingTask}
           allTasks={currentObjective.tasks}
           isOpen={!!editingTask}
@@ -1146,6 +1168,196 @@ export default function BabyAGI() {
           onDelete={deleteTask}
         />
       )}
-    </div>
-  );
+
+     <iReportModal
+        objective={reportObjective}
+        isOpen={reportOpen}
+        onClose={() => setReportOpen(false)}
+      />
+
+      {/* Floating Speed Dial (Radial) */}
+      <div className="fixed bottom-6 right-6 z-50">
+        {/* Backdrop when open */}
+        <AnimatePresence>
+          {speedDialOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.4 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black"
+              onClick={() => setSpeedDialOpen(false)}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Radial action fan */}
+        <div className="relative">
+          <AnimatePresence>
+            {speedDialOpen && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="absolute bottom-16 right-0 w-0 h-0"
+              >
+                {[
+                  { icon: BarChart3, title: 'Analytics', onClick: () => setShowAnalytics(v => !v), angle: -90 },
+                  { icon: Download, title: 'Export JSON', onClick: handleExport, angle: -130 },
+                  { icon: FileText, title: 'Report', onClick: openReportForCurrentObjective, angle: -50, disabled: !currentObjective },
+                  { icon: MessageSquare, title: 'Assistant', onClick: () => setChatOpen(true), angle: -10 },
+                  { icon: Lightbulb, title: 'Learnings', onClick: () => setKnowledgeOpen(v => !v), angle: -170 },
+                  { icon: Users, title: 'Team', onClick: () => setTeamCollabOpen(true), angle: -210 },
+                  { icon: TrendingUp, title: 'Performance', onClick: () => setPerformanceOpen(true), angle: -250 },
+                ]
+                  .concat(loopMode === 'timed' && currentObjective ? [{ icon: RefreshCw, title: 'Evaluate', onClick: evaluateProgress, angle: -290 }] : [])
+                  .map((action, idx) => {
+                    const radius = 110;
+                    const rad = (action.angle * Math.PI) / 180;
+                    const x = Math.cos(rad) * radius;
+                    const y = Math.sin(rad) * radius;
+                    const Icon = action.icon as React.ComponentType<{ className?: string }>;
+                    return (
+                      <motion.button
+                        key={idx}
+                        initial={{ opacity: 0, x: 0, y: 0 }}
+                        animate={{ opacity: 1, x, y }}
+                        exit={{ opacity: 0, x: 0, y: 0 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 20, delay: idx * 0.03 }}
+                        onClick={() => { if (!action.disabled) { action.onClick(); setSpeedDialOpen(false); } }}
+                        className={`absolute right-0 bottom-0 rounded-full w-10 h-10 flex items-center justify-center glass glow-border ${action.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title={action.title}
+                      >
+                        <Icon className="w-5 h-5" />
+                      </motion.button>
+                    );
+                  })}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* FAB */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setSpeedDialOpen(o => !o)}
+            className="rounded-full w-12 h-12 flex items-center justify-center bg-gradient-to-r from-primary to-accent shadow-lg glow-border relative"
+            title="Actions"
+          >
+            <motion.div
+              animate={{ rotate: speedDialOpen ? 45 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Sparkles className="w-5 h-5 text-white" />
+            </motion.div>
+          </motion.button>
+        </div>
+      </div>oating Speed Dial */}
+     < div className="fixed bottom-6 right-6 z-50">
+        {/* Backdrop when open */}
+       < AnimatePresence>
+          {speedDialOpen && (
+           < motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.4 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black"
+              onClick={() => setSpeedDialOpen(false)}
+            />
+          )}
+      </  AnimatePresence>
+
+        {/* Action buttons stack */}
+       < div className="relative">
+         < AnimatePresence>
+            {speedDialOpen && (
+             < motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="mb-3 flex flex-col items-end gap-2"
+              >
+               < button
+                  onClick={() => { setShowAnalytics(v => !v); setSpeedDialOpen(false); }}
+                  className="glass px-3 py-2 rounded-lg flex items-center gap-2"
+                  title="Toggle Analytics"
+                >
+                 < BarChart3 className="w-4 h-4" /> Analytics
+              </  button>
+               < button
+                  onClick={() => { handleExport(); setSpeedDialOpen(false); }}
+                  className="glass px-3 py-2 rounded-lg flex items-center gap-2"
+                  title="Export Data (JSON)"
+                >
+                 < Download className="w-4 h-4" /> Export JSON
+              </  button>
+               < button
+                  onClick={() => { openReportForCurrentObjective(); setSpeedDialOpen(false); }}
+                  disabled={!currentObjective}
+                  className="glass px-3 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50"
+                  title="Generate Report (Markdown)"
+                >
+                 < FileText className="w-4 h-4" /> Report
+              </  button>
+               < button
+                  onClick={() => { setChatOpen(true); setSpeedDialOpen(false); }}
+                  className="glass px-3 py-2 rounded-lg flex items-center gap-2"
+                  title="AI Assistant"
+                >
+                 < MessageSquare className="w-4 h-4" /> Assistant
+              </  button>
+               < button
+                  onClick={() => { setKnowledgeOpen(v => !v); setSpeedDialOpen(false); }}
+                  className="glass px-3 py-2 rounded-lg flex items-center gap-2"
+                  title="Past Learnings"
+                >
+                 < Lightbulb className="w-4 h-4" /> Learnings
+              </  button>
+               < button
+                  onClick={() => { setTeamCollabOpen(true); setSpeedDialOpen(false); }}
+                  className="glass px-3 py-2 rounded-lg flex items-center gap-2"
+                  title="Team Collaboration"
+                >
+                 < Users className="w-4 h-4" /> Team
+              </  button>
+               < button
+                  onClick={() => { setPerformanceOpen(true); setSpeedDialOpen(false); }}
+                  className="glass px-3 py-2 rounded-lg flex items-center gap-2"
+                  title="Performance Insights"
+                >
+                 < TrendingUp className="w-4 h-4" /> Performance
+              </  button>
+                {loopMode === 'timed' && currentObjective && (
+                 < button
+                    onClick={() => { evaluateProgress(); setSpeedDialOpen(false); }}
+                    className="glass px-3 py-2 rounded-lg flex items-center gap-2"
+                    title="Evaluate Now"
+                  >
+                   < RefreshCw className="w-4 h-4" /> Evaluate
+                </  button>
+                )}
+            </  motion.div>
+            )}
+        </  AnimatePresence>
+
+          {/* FAB */}
+         < motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setSpeedDialOpen(o => !o)}
+            className="rounded-full w-12 h-12 flex items-center justify-center bg-gradient-to-r from-primary to-accent shadow-lg glow-border"
+            title="Actions"
+          >
+           < motion.div
+              animate={{ rotate: speedDialOpen ? 45 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+             < Sparkles className="w-5 h-5 text-white" />
+          </  motion.div>
+        </  motion.button>
+      </  div>
+    </  div>
+  </  div>
+  _code);new
+</}
+;
 }
